@@ -1,4 +1,7 @@
-export type ValueType = "nil" | "int" | "string"
+import { Expr } from "../frontend/ast.ts"
+import Env from "./env.ts"
+
+export type ValueType = "nil" | "int" | "string" | "func"
 
 export interface RuntimeVal{
     type : ValueType
@@ -17,6 +20,14 @@ export interface IntVal extends RuntimeVal{
     valueType: "int"
 }
 
+export interface FuncVal extends RuntimeVal{
+    type: "func"
+    value: Expr
+    valueType: "func"
+    returnType: string
+    scope: Env
+    paramNames: string[]
+}
 export interface StringVal extends RuntimeVal{
     type: "string"
     value: string

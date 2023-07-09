@@ -17,6 +17,11 @@ export enum TokenType{
     Var,
     Colon,
     Type,
+    Returns,
+    Call,
+    OpenBracket,
+    ColseBracket,
+    Comma,
     EOF
 }
 
@@ -24,7 +29,8 @@ const KEYWORDS: Record<string, TokenType> = {
     "nil": TokenType.Nil,
     "var": TokenType.Var,
     "int": TokenType.Type,
-    "string": TokenType.Type
+    "string": TokenType.Type,
+    "func": TokenType.Type
 }
 
 
@@ -75,10 +81,24 @@ export function tokenize(sourceCode: string): Token[] {
       }
       else if (src[0] == ":") {
         tokens.push(token(src.shift(), TokenType.Colon));
-      } // HANDLE MULTICHARACTER KEYWORDS, TOKENS, IDENTIFIERS ETC...
+      }
+      else if (src[0] == ",") {
+        tokens.push(token(src.shift(), TokenType.Comma));
+      }
+      else if (src[0] == "[") {
+        tokens.push(token(src.shift(), TokenType.OpenBracket));
+      }
+      else if (src[0] == "]") {
+        tokens.push(token(src.shift(), TokenType.ColseBracket));
+      }   // HANDLE MULTICHARACTER KEYWORDS, TOKENS, IDENTIFIERS ETC...
       else if (src[0] == "$") {
         tokens.push(token(src.shift(), TokenType.Var));
-      } // HANDLE MULTICHARACTER KEYWORDS, TOKENS, IDENTIFIERS ETC...
+      }
+      else if (src[0] == "#") {
+        tokens.push(token(src.shift(), TokenType.Call));
+      } else if (src[0] == ">") {
+        tokens.push(token(src.shift(), TokenType.Returns));
+      }// HANDLE MULTICHARACTER KEYWORDS, TOKENS, IDENTIFIERS ETC...
       else {
         // Handle numeric literals -> Integers
         if (isint(src[0])) {

@@ -1,4 +1,4 @@
-import { CustomNode, Program, Expr, BinaryExpr, Identifier, NumericLiteral, NilLiteral, VarDec, StringLiteral, VarAssign } from "./ast.ts";
+import { CustomNode, Program, Expr, BinaryExpr, Identifier, NumericLiteral, NilLiteral, VarDec, StringLiteral, VarAssign, FuncDef, CallExpr } from "./ast.ts";
 import { tokenize, Token, TokenType} from "./lexer.ts";
 
 
@@ -31,7 +31,7 @@ export default class Parser{
 
     private expect(type : TokenType, err : string): Token{
         const prev = this.eat()
-        if(!prev || prev.type == type){
+        if(!prev || prev.type != type){
             console.error("parser error: \n", err, "type:",prev.type, "- Expecting:", type)
             Deno.exit(1)
         }
@@ -58,6 +58,27 @@ export default class Parser{
             }
         }
         return {"type": "StringLiteral", "value": string, "valueType": "string"} as StringLiteral
+    }
+    //at() = {value: "func", type: TokenType.Type}
+    private parseFunctionDeclaration(name:string): Expr{
+        this.expect(TokenType.OpenParen, "Func must have a signiture")
+        //this.expect(TokenType.OpenParen, `Parameters must be surrounded by parens\n PARSER ERROR AT ${JSON.stringify(this.at())}`)
+        const paramTypes = []
+        while(this.at().type != TokenType.CloseParen){
+            paramTypes.push(this.expect(TokenType.Type, `param types must accualy be types\n PARSER ERROR AT ${JSON.stringify(this.at())}`).value)
+        }
+        this.expect(TokenType.CloseParen, `close your parenthisis next time. \n PARSER ERROR AT: ${JSON.stringify(this.at())}`)
+        //this.expect(TokenType.Returns, "Function must return something")
+        //const returnType = this.expect(TokenType.Type, "return types must accualy be types").value
+        this.expect(TokenType.Equals, "Functions must always be initialized")
+        this.expect(TokenType.OpenParen, `Parameters must be surrounded by parens\n PARSER ERROR AT ${JSON.stringify(this.at())}`)
+        const paramIds = []
+        while(this.at().type != TokenType.CloseParen){
+            paramIds.push(this.expect(TokenType.Identifier, "Invalid identifier").value)
+        }
+        this.expect(TokenType.CloseParen, `close your parenthisis next time. \n PARSER ERROR AT: ${JSON.stringify(this.at())}`)
+        this.expect(TokenType.Returns, "Function must return something")
+        return {returnType: "int", paramTypes, paramNames: paramIds, returnExpr: this.parseExpr(), id:name, type: "FuncDef"} as FuncDef
     }
 
     private parseExpr(): Expr {
@@ -113,19 +134,37 @@ export default class Parser{
         return left;
     }
 
+    private parseFuncCall(): Expr {
+        this.eat()
+        const id = this.expect(TokenType.Identifier, "Misuse of the call operator").value
+        this.expect(TokenType.OpenParen, "arguments in function calls must be surounded by parens")
+        const args = []
+        args.push(this.parseExpr())
+        while (this.at().type != TokenType.CloseParen) {
+            if(this.at().type == TokenType.Comma){
+                this.eat()
+                args.push(this.parseExpr())
+            }
+        }
+        this.eat()
+        return {type: "CallExpr", args, name: id} as CallExpr
+    }
+
     private parsePrimaryExpr(): Expr {
         const tk: TokenType = this.at().type
         switch (tk) {
             case TokenType.Identifier:
                 return {type: "Identifier", symbol: this.eat().value} as Identifier
+            case TokenType.Call:
+                return this.parseFuncCall() as CallExpr
             case TokenType.Number:
                 return {type: "NumericLiteral", value: parseFloat(this.eat().value)} as NumericLiteral
             case TokenType.Quote:
-                return this.parseStringLiteral()
+                return this.parseStringLiteral() as StringLiteral
             case TokenType.OpenParen: {
                 this.eat()
                 const value = this.parseExpr()
-                this.expect(TokenType.CloseParen, "Unexpected token instead of closing paren")
+                this.expect(TokenType.CloseParen, "Unexpected token instead of closing bracket")
                 return value
             }
             case TokenType.Nil:
@@ -146,6 +185,9 @@ export default class Parser{
                 this.eat()
                 if(this.at().type == TokenType.Type){
                     const type = this.eat().value
+                    if(type == "func"){
+                        return this.parseFunctionDeclaration(identifier)
+                    }
                     if(this.at().type == TokenType.Equals){
                         this.eat()
                         return {type: "VarDec", id: identifier, value: this.parseExpr(), valueType: type} as VarDec

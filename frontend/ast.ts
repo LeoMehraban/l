@@ -16,7 +16,9 @@ export interface VarDec extends CustomNode{
     valueType: ValueType
 }
 
-export interface Expr extends CustomNode{}
+export interface Expr extends CustomNode{
+    valueType: string
+}
 
 export interface BinaryExpr extends Expr{
     type: "BinaryExpr"
@@ -30,6 +32,21 @@ export interface VarAssign extends Expr{
     type: "VarAssign"
     assigne: Expr
     value: Expr
+}
+
+export interface FuncDef extends Expr{
+    type: "FuncDef"
+    paramTypes: string[]
+    returnType: string
+    returnExpr: Expr
+    paramNames: string[]
+    id: string
+}
+
+export interface CallExpr extends Expr{
+    type: "CallExpr"
+    args: Expr[]
+    name: string
 }
 
 export interface Identifier extends Expr{
@@ -60,7 +77,7 @@ export type ValueType = "int" | "string"
 
 
 
-export type NodeType = "Program" | "NumericLiteral" | "Identifier" | "BinaryExpr" | "NilLiteral" | "VarDec" | "VarAssign" | "StringLiteral"
+export type NodeType = "Program" | "NumericLiteral" | "Identifier" | "BinaryExpr" | "NilLiteral" | "VarDec" | "VarAssign" | "StringLiteral" | "CallExpr" | "FuncDef"
 
 // let mainTree : Tree<number> = new Tree(new CustomNode(5))
 // mainTree.root.left = new CustomNode<number>(3)

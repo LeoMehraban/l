@@ -1,5 +1,5 @@
-import {RuntimeVal, IntVal, NilVal, StringVal} from "./values.ts"
-import {BinaryExpr, CustomNode, Identifier, NumericLiteral, Program, StringLiteral, VarAssign, VarDec } from "../frontend/ast.ts"
+import {RuntimeVal, IntVal, NilVal, StringVal, FuncVal} from "./values.ts"
+import {BinaryExpr, CallExpr, CustomNode, Expr, FuncDef, Identifier, NumericLiteral, Program, StringLiteral, VarAssign, VarDec } from "../frontend/ast.ts"
 import Env from "./env.ts"
 
 export function interperate(astNode: CustomNode, env: Env): RuntimeVal {
@@ -19,11 +19,38 @@ export function interperate(astNode: CustomNode, env: Env): RuntimeVal {
         case "VarDec":
             return evalDec(astNode as VarDec, env)
         case "VarAssign":
-                return evalAssign(astNode as VarAssign, env)
+            return evalAssign(astNode as VarAssign, env)
+        case "FuncDef":
+            return evalFuncDef(astNode as FuncDef, env)
+        case "CallExpr":
+            return evalFuncCall(astNode as CallExpr, env)
         default:
             console.error("Not implemented yet:", astNode)
             Deno.exit(1)
     }
+}
+
+function evalFuncCall(funccall: CallExpr, env: Env): RuntimeVal{
+    const funcval = env.lookupVar(funccall.name) as FuncVal
+    
+    for(let i = 0; i < funccall.args.length; i++){
+        funcval.scope.assignVar(funcval.paramNames[i], interperate(funccall.args[i], funcval.scope))
+    }
+    
+    return interperate(funcval.value, funcval.scope)
+}
+
+function evalFuncDef(funcdef: FuncDef, env: Env): RuntimeVal{
+    const scope = new Env(env)
+    if(funcdef.paramNames.length != funcdef.paramTypes.length){
+        throw `all params must have a name and a type`
+    }
+    let i = 0
+    for(const name of funcdef.paramNames){
+        i++;
+        scope.declareVariable(name, {type: funcdef.paramTypes[i], valueType:funcdef.paramTypes[i], value: "nil"} as NilVal, funcdef.paramTypes[i])
+    }
+    return env.declareVariable(funcdef.id, {type: "func", value: funcdef.returnExpr, returnType: funcdef.returnType, paramNames: funcdef.paramNames, scope} as FuncVal, "func")
 }
 
 function evalId(id: Identifier, env: Env): RuntimeVal {
@@ -35,8 +62,9 @@ function evalBinary(binop: BinaryExpr, env: Env): RuntimeVal{
     const right = interperate(binop.right, env)
     if(left.type == "int" && right.type == "int"){
         return evalNumericBinary(left as IntVal, right as IntVal, binop.operator)
+    } else {
+        throw `inconvertible types: ${left.valueType}, ${right.valueType}`
     }
-    return {"value": "nil", "type": "nil"} as NilVal
 }
 
 function evalProgram(program: Program, env: Env): RuntimeVal{
@@ -70,6 +98,8 @@ function evalDec(vardec: VarDec,env: Env): RuntimeVal {
 }
 
 function evalAssign(varassign: VarAssign,env: Env): RuntimeVal {
+    if(varassign.assigne.valueType != varassign.value.valueType)
+        throw `inconvertible types: ${varassign.assigne.valueType}, ${varassign.value.valueType}`
     if(varassign.assigne.type != "Identifier")
         throw `Invalid Node Type: ${varassign.assigne.type}`
     const varname = (varassign.assigne as Identifier).symbol

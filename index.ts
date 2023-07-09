@@ -9,7 +9,8 @@ import { interperate } from "./runtime/interperater.ts";
 function doText(){
     const parser = new Parser()
     const env = new Env()
-    const input = "$s:int = 5\n s = 5"
+    const decoder = new TextDecoder("utf-8")
+    const input: string = decoder.decode(Deno.readFileSync(Deno.args[0]))
     console.log("LEXER\n")
     console.log(tokenize(input))
     console.log("PARSER\n")
@@ -17,7 +18,6 @@ function doText(){
     console.log(program)
     console.log("ITERPERATER\n")
     console.log(interperate(program, env))
-    repl()
 }
 
 
@@ -34,12 +34,12 @@ function repl() {
         if(!input || input.includes("exit")){
             Deno.exit(1)
         }
-        //console.log("LEXER\n")
-        //console.log(tokenize(input))
-        //console.log("PARSER\n")
+        console.log("LEXER\n")
+        console.log(tokenize(input))
+        console.log("PARSER\n")
         const program = parser.produceAST(input)
-        //console.log(program)
-        //console.log("ITERPERATER\n")
+        console.log(program)
+        console.log("ITERPERATER\n")
         console.log(interperate(program, env))
     }
 }
