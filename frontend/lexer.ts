@@ -37,7 +37,7 @@ const KEYWORDS: Record<string, TokenType> = {
 /**
  * Returns whether the character passed in alphabetic -> [a-zA-Z]
  */
-function isalpha(src: string) {
+export function isalpha(src: string) {
     return src.toUpperCase() != src.toLowerCase();
 }
   

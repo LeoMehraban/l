@@ -1,4 +1,4 @@
-import { Expr } from "../frontend/ast.ts"
+import { FuncBody } from "../frontend/ast.ts"
 import Env from "./env.ts"
 
 export type ValueType = "nil" | "int" | "string" | "func"
@@ -6,6 +6,7 @@ export type ValueType = "nil" | "int" | "string" | "func"
 export interface RuntimeVal{
     type : ValueType
     valueType: string
+    value?: any
 }
 
 export interface NilVal extends RuntimeVal{
@@ -22,11 +23,10 @@ export interface IntVal extends RuntimeVal{
 
 export interface FuncVal extends RuntimeVal{
     type: "func"
-    value: Expr
+    value: FuncBody[]
     valueType: "func"
     returnType: string
     scope: Env
-    paramNames: string[]
 }
 export interface StringVal extends RuntimeVal{
     type: "string"

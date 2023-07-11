@@ -1,4 +1,4 @@
-import { CustomNode, Program, Expr, BinaryExpr, Identifier, NumericLiteral, NilLiteral, VarDec, StringLiteral, VarAssign, FuncDef, CallExpr } from "./ast.ts";
+import { CustomNode, Program, Expr, BinaryExpr, Identifier, NumericLiteral, NilLiteral, VarDec, StringLiteral, VarAssign, FuncDef, CallExpr, FuncBody } from "./ast.ts";
 import { tokenize, Token, TokenType} from "./lexer.ts";
 
 
@@ -38,6 +38,17 @@ export default class Parser{
         return prev;
     }
 
+    private expectTwo(type1 : TokenType,type2: TokenType, err : string): Token{
+        const prev = this.eat()
+        if(!prev || prev.type != type1 && prev.type != type2){
+            console.error("parser error: \n", err)
+            Deno.exit(1)
+        }
+        return prev;
+    }
+
+    
+
     private parseStatement(): CustomNode {
         switch (this.at().type) {
             case TokenType.Var:
@@ -74,12 +85,26 @@ export default class Parser{
         this.expect(TokenType.OpenParen, `Parameters must be surrounded by parens\n PARSER ERROR AT ${JSON.stringify(this.at())}`)
         const paramIds = []
         while(this.at().type != TokenType.CloseParen){
-            paramIds.push(this.expect(TokenType.Identifier, "Invalid identifier").value)
+            paramIds.push(this.expectTwo(TokenType.Identifier, TokenType.Number,  "Invalid identifier").value)
         }
         this.expect(TokenType.CloseParen, `close your parenthisis next time. \n PARSER ERROR AT: ${JSON.stringify(this.at())}`)
         this.expect(TokenType.Returns, "Function must return something")
-        return {returnType: "int", paramTypes, paramNames: paramIds, returnExpr: this.parseExpr(), id:name, type: "FuncDef"} as FuncDef
+        const returnExprs = [{returnExpr: this.parseExpr(), type: "FuncBody", conditions: paramIds} as FuncBody]
+        while(this.at().type == TokenType.Comma){
+            this.eat()
+            this.expect(TokenType.OpenParen, `Parameters must be surrounded by parens\n PARSER ERROR AT ${JSON.stringify(this.at())}`)
+            const paramIds2 = []
+            while(this.at().type != TokenType.CloseParen){
+                paramIds2.push(this.expectTwo(TokenType.Identifier, TokenType.Number,  "Invalid identifier").value)
+            }
+            this.expect(TokenType.CloseParen, `close your parenthisis next time. \n PARSER ERROR AT: ${JSON.stringify(this.at())}`)
+            this.expect(TokenType.Returns, "Function must return something")
+            returnExprs.push({returnExpr: this.parseExpr(), conditions: paramIds2, type: "FuncBody"} as FuncBody)
+        }
+        return {returnType: "int", paramTypes, paramNames: paramIds, returnExpr: returnExprs, id:name, type: "FuncDef"} as FuncDef
     }
+
+
 
     private parseExpr(): Expr {
         return this.parseAssignmentExpr()

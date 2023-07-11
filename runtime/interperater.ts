@@ -1,6 +1,7 @@
 import {RuntimeVal, IntVal, NilVal, StringVal, FuncVal} from "./values.ts"
-import {BinaryExpr, CallExpr, CustomNode, Expr, FuncDef, Identifier, NumericLiteral, Program, StringLiteral, VarAssign, VarDec } from "../frontend/ast.ts"
+import {BinaryExpr, CallExpr, CustomNode, FuncDef, Identifier, NumericLiteral, Program, StringLiteral, VarAssign, VarDec } from "../frontend/ast.ts"
 import Env from "./env.ts"
+import { isalpha } from "../frontend/lexer.ts";
 
 export function interperate(astNode: CustomNode, env: Env): RuntimeVal {
     switch (astNode.type) {
@@ -24,6 +25,8 @@ export function interperate(astNode: CustomNode, env: Env): RuntimeVal {
             return evalFuncDef(astNode as FuncDef, env)
         case "CallExpr":
             return evalFuncCall(astNode as CallExpr, env)
+        case "FuncBody":
+            return {type: "nil", value: "nil", valueType: "nil"} as NilVal
         default:
             console.error("Not implemented yet:", astNode)
             Deno.exit(1)
@@ -32,38 +35,51 @@ export function interperate(astNode: CustomNode, env: Env): RuntimeVal {
 
 function evalFuncCall(funccall: CallExpr, env: Env): RuntimeVal{
     const funcval = env.lookupVar(funccall.name) as FuncVal
-    
+    let index = 0
     for(let i = 0; i < funccall.args.length; i++){
-        funcval.scope.assignVar(funcval.paramNames[i], interperate(funccall.args[i], funcval.scope))
+            const funcvalexprs = funcval.value
+            for(const expr of funcvalexprs){
+                for(let i = 0; i < funccall.args.length, i++;){
+                    funcval.scope.assignVar(expr.conditions[i], interperate(funccall.args[i], env))
+                }
+                const val = interperate(funccall.args[i], funcval.scope).value;
+                console.log(expr.conditions[i], val)
+                if(expr.conditions[i] == String(val)){
+                    return interperate(funcval.value[index].returnExpr, funcval.scope)
+                }
+            } 
+        
     }
+    return interperate(funcval.value[index].returnExpr, funcval.scope)
     
-    return interperate(funcval.value, funcval.scope)
 }
 
 function evalFuncDef(funcdef: FuncDef, env: Env): RuntimeVal{
     const scope = new Env(env)
-    if(funcdef.paramNames.length != funcdef.paramTypes.length){
-        throw `all params must have a name and a type`
-    }
     let i = 0
-    for(const name of funcdef.paramNames){
-        i++;
-        scope.declareVariable(name, {type: funcdef.paramTypes[i], valueType:funcdef.paramTypes[i], value: "nil"} as NilVal, funcdef.paramTypes[i])
+    for(const expr of funcdef.returnExpr){
+        for(const name of expr.conditions){
+            i++;
+            scope.declareVariable(name, {type: funcdef.paramTypes[i], valueType:funcdef.paramTypes[i], value: "nil"} as NilVal, funcdef.paramTypes[i])
+        }
     }
-    return env.declareVariable(funcdef.id, {type: "func", value: funcdef.returnExpr, returnType: funcdef.returnType, paramNames: funcdef.paramNames, scope} as FuncVal, "func")
+    return env.declareVariable(funcdef.id, {type: "func", value: funcdef.returnExpr, returnType: funcdef.returnType, paramNames: funcdef.paramNames, scope, valueType: "func"} as FuncVal, "func")
 }
 
 function evalId(id: Identifier, env: Env): RuntimeVal {
+    id.valueType = env.lookupVar(id.symbol).valueType
     return env.lookupVar(id.symbol)
 }
 
 function evalBinary(binop: BinaryExpr, env: Env): RuntimeVal{
     const left = interperate(binop.left, env)
     const right = interperate(binop.right, env)
-    if(left.type == "int" && right.type == "int"){
+    console.log(left, "\n", right)
+    if(left.type == "int" && right.type == "int" || left.type == undefined || right.type == undefined){
         return evalNumericBinary(left as IntVal, right as IntVal, binop.operator)
     } else {
-        throw `inconvertible types: ${left.valueType}, ${right.valueType}`
+        throw new Error(`inconvertible types: ${left.type}, ${right.type}`);
+        
     }
 }
 

@@ -1,4 +1,3 @@
-
 import { tokenize } from "./frontend/lexer.ts";
 import Parser from "./frontend/parser.ts";
 import Env from "./runtime/env.ts";
@@ -32,14 +31,14 @@ function repl() {
     while (true) {
         const input = prompt("> ")
         if(!input || input.includes("exit")){
-            Deno.exit(1)
+            Deno.exit(0)
         }
-        console.log("LEXER\n")
-        console.log(tokenize(input))
-        console.log("PARSER\n")
+        //console.log("LEXER\n")
+        //console.log(tokenize(input))
+        //console.log("PARSER\n")
         const program = parser.produceAST(input)
-        console.log(program)
-        console.log("ITERPERATER\n")
+        //console.log(program)
+        //console.log("ITERPERATER\n")
         console.log(interperate(program, env))
     }
 }

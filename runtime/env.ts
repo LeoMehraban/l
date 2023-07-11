@@ -29,10 +29,12 @@ export default class Env{
 
 
     public lookupVar(name: string): RuntimeVal{
+    //    console.log("looking up")
         return this.resolve(name).variables.get(name) as RuntimeVal
     }
 
     public resolve(name: string): Env{
+        //console.log("resolving")
         if(this.variables.has(name)){
             return this
         } 
