@@ -5,6 +5,8 @@ import { interperate } from "./runtime/interperater.ts";
 
 //doText()
 
+
+
 function doText(){
     const parser = new Parser()
     const env = new Env()

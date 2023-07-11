@@ -35,17 +35,15 @@ export function interperate(astNode: CustomNode, env: Env): RuntimeVal {
 
 function evalFuncCall(funccall: CallExpr, env: Env): RuntimeVal{
     const funcval = env.lookupVar(funccall.name) as FuncVal
-    let index = 0
+    let index = findCorrectIndexOfFuncBody(funcval)
     for(let i = 0; i < funccall.args.length; i++){
             const funcvalexprs = funcval.value
             for(const expr of funcvalexprs){
-                for(let i = 0; i < funccall.args.length, i++;){
-                    funcval.scope.assignVar(expr.conditions[i], interperate(funccall.args[i], env))
-                }
+                funcval.scope.assignVar(expr.conditions[i], interperate(funccall.args[i], env))
                 const val = interperate(funccall.args[i], funcval.scope).value;
-                console.log(expr.conditions[i], val)
+                //console.log(expr.conditions[i], String(val))
                 if(expr.conditions[i] == String(val)){
-                    return interperate(funcval.value[index].returnExpr, funcval.scope)
+                    index = i
                 }
             } 
         
@@ -54,13 +52,27 @@ function evalFuncCall(funccall: CallExpr, env: Env): RuntimeVal{
     
 }
 
+function findCorrectIndexOfFuncBody(funcval : FuncVal): number{
+    let index = 0
+    for(let i = 0; i < funcval.value.length; i++){
+        for(const arg of funcval.value[i].conditions){
+            if(isalpha(arg)){
+                index = i
+            }
+        }
+    }
+    return index
+}
+
 function evalFuncDef(funcdef: FuncDef, env: Env): RuntimeVal{
     const scope = new Env(env)
     let i = 0
     for(const expr of funcdef.returnExpr){
         for(const name of expr.conditions){
             i++;
-            scope.declareVariable(name, {type: funcdef.paramTypes[i], valueType:funcdef.paramTypes[i], value: "nil"} as NilVal, funcdef.paramTypes[i])
+            //if(isalpha(name)){
+                scope.declareVariable(name, {type: funcdef.paramTypes[i], valueType:funcdef.paramTypes[i], value: "nil"} as NilVal, funcdef.paramTypes[i])
+            //}
         }
     }
     return env.declareVariable(funcdef.id, {type: "func", value: funcdef.returnExpr, returnType: funcdef.returnType, paramNames: funcdef.paramNames, scope, valueType: "func"} as FuncVal, "func")
@@ -74,7 +86,7 @@ function evalId(id: Identifier, env: Env): RuntimeVal {
 function evalBinary(binop: BinaryExpr, env: Env): RuntimeVal{
     const left = interperate(binop.left, env)
     const right = interperate(binop.right, env)
-    console.log(left, "\n", right)
+    //console.log(left, "\n", right)
     if(left.type == "int" && right.type == "int" || left.type == undefined || right.type == undefined){
         return evalNumericBinary(left as IntVal, right as IntVal, binop.operator)
     } else {

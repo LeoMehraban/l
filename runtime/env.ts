@@ -24,6 +24,7 @@ export default class Env{
     public assignVar(name: string, value: RuntimeVal): RuntimeVal{
         const env = this.resolve(name)
         env.variables.set(name, value)
+        //console.log("assigned")
         return value
     }
 
